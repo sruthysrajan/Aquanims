@@ -1,5 +1,5 @@
 # Aquanims
-Animated transitions for statistical data graphics.
+Area-preserving animated transitions based on a hydraulic metaphor.
 
 ## Abstract
 "Aquanims" is new design metaphors for animated transitions that preserve displayed areas during the
@@ -28,13 +28,12 @@ The liquid in a container can be shifted, i.e. translated along the container ax
 In a single container, two or more segments of the controlled liquid separated by segments of other liquids can be connected by hidden pipes following the same rules as communicating containers. The liquid transferred in the pipe changes the local segment area but preserves global area. The other liquids are shifted along the container.
 
 ## Implementation
-![example](https://user-images.githubusercontent.com/40992880/42441215-6be88c96-8370-11e8-8795-3597b06af10e.JPG)
+![example2](https://user-images.githubusercontent.com/40992880/42474737-2a7e11de-83d1-11e8-809d-d09b04857277.JPG)
 
-As a first step, we add the bounding box of both initial and final state rectangles and the side which is controlled (middle vertical line, red color in the second row) is interpolated linearly between initial (t'<sub>0</sub>) and final states (t'<sub>1</sub>). Then we remove these elements to render the final state. 
-
-The underneath model (second row) shows that two sides of the inital rectangle are fixed (black dots), one is directly controlled (red line) and one is moved (green line) under the preserving-area constraint. The corners of the reshaped rectangle follow hyperbolic trajectories (light blue dashed lines). 
-
-The bottom row shows that linear interpolation (purple box and dashed line) between initial and final positions of the vertices does not preserve area.
+- **Initial state** In this step, the containers for the initial and final states are created by specifying attributes for dimensions such as height, width, x and y coordinates.
+- **Transformation phase** Individual segments of the stacked bars are selected and fill out transitions are performed on these segments. Simultaneously, each individual bar of the grouped bars is selected and fill in transitions are performed. The time delay of execution for each segment is set in accordance to the time delay and duration of execution of the previous segment. Also, the time duration for each segment is set to be proportional to the height of data, i.e the amount of liquid contained in that segment.
+The containers for the segments of the stacked bar are set to disappear after each transition.
+- **Final state** In the final state, the stack element is completely removed, and only the grouped bars remain.
 
 ## Dependancy
 
