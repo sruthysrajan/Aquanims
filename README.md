@@ -6,7 +6,7 @@ Animated transitions for statistical data graphics.
 transformation. Animated transitions are used to facilitate understanding of graphical transformations between different
 visualizations. As liquids are incompressible fluids, we use a hydraulic metaphor to convey the sense of area preservation during animated transitions. In aquanims, graphical objects can change shape, position, color and even connectedness but not displayed area, as for a liquid contained in a transparent vessel or transferred between such vessels communicating through hidden pipes.
 
-### Design
+### Design concept
 In our physical analogy we consider that the equivalent to a bar or a tile is actually the liquid which takes the form of its graphical container. By so doing we transfer the semantic of the area of the graphical container to the one of the graphical fluid it contains. So we can change the shape of a set of containers, move the liquid from one container to another, or even let it be shared between several containers without changing its total volume. Thus the two fundamental principles underlying aquanims are:
 
 - **First principle:** the liquid encodes the data. Data are mapped to the fluid content rather than to its container.
@@ -26,6 +26,15 @@ The liquid in a container can be shifted, i.e. translated along the container ax
 
 - **Communicating segments: shift**
 In a single container, two or more segments of the controlled liquid separated by segments of other liquids can be connected by hidden pipes following the same rules as communicating containers. The liquid transferred in the pipe changes the local segment area but preserves global area. The other liquids are shifted along the container.
+
+### Implementation
+![example](https://user-images.githubusercontent.com/40992880/42441215-6be88c96-8370-11e8-8795-3597b06af10e.JPG)
+
+As a first step, we add the bounding box of both initial and final state rectangles and the side which is controlled (middle vertical line, red color in the second row) is interpolated linearly between initial (t'<sub>0</sub>) and final states (t'<sub>1</sub>). Then we remove these elements to render the final state. 
+
+The underneath model (second row) shows that two sides of the inital rectangle are fixed (black dots), one is directly controlled (red line) and one is moved (green line) under the preserving-area constraint. The corners of the reshaped rectangle follow hyperbolic trajectories (light blue dashed lines). 
+
+The bottom row shows that linear interpolation (purple box and dashed line) between initial and final positions of the vertices does not preserve area.
 
 ### Dependancy
 
