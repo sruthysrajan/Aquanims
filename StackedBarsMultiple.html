@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stack Without Preset Duration</title>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <style type="text/css">
+  svg {
+    font: 10px sans-serif;
+    shape-rendering: crispEdges;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+  }
+  </style>
+
+</head>
+<body>
+<script>
+
+/* Setup svg*/
+
+var margin = {top: 20, right: 160, bottom: 35, left: 30};
+
+var width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+/* Data in strings*/
+
+var data = [
+  { year: "2006", A: "10", B: "15", C: "9", D: "6" },
+  { year: "2007", A: "12", B: "18", C: "9", D: "4" },
+  { year: "2008", A: "05", B: "20", C: "8", D: "2" },
+  { year: "2009", A: "01", B: "15", C: "5", D: "4" },
+  { year: "2010", A: "02", B: "10", C: "4", D: "2" }
+];
+    
+//console.log(data[0]);
+    
+var categories = d3.keys(data[0]).filter(function(key) { return key !== "year"; });
+
+//console.log(categories);
+    
+var parse = d3.time.format("%Y").parse;
+
+/* Transpose the data into layers*/
+var dataset = d3.layout.stack()(categories.map(function(letter) {
+  return data.map(function(d) {
+    return {name: letter, x: parse(d.year), y: +d[letter]};
+  });
+}));
+
+//console.log(dataset);
+//console.log(dataset[0]);
+    
+
+    
+/* Set x, y and colors*/
+var x = d3.scale.ordinal()
+  .domain(dataset[0].map(function(d) { return d.x; }))
+  .rangeRoundBands([10, width-10],0.3);
+    
+
+var y = d3.scale.linear()
+  .domain([0, d3.max(dataset, function(d) {  return d3.max(d, function(d) { return d.y0 + d.y; });  })])
+  .range([height, 0]);
+
+var colors = ['#6b486b', '#a05d56', '#d0743c', '#ff8c00'];
+
+
+/* Define and draw axes */
+var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient("left")
+  .ticks(5)
+  .tickFormat( function(d) { return d } );
+
+var xAxis = d3.svg.axis()
+  .scale(x)
+  .orient("bottom")
+  .tickFormat(d3.time.format("%Y"));
+
+svg.append("g")
+  .attr("class", "y axis")
+  .attr("transform","translate(12,0)")
+  .call(yAxis);
+
+svg.append("g")
+  .attr("class", "x axis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(xAxis);
+
+
+/* Create groups for each series, rects for each segment */
+var groups = svg.selectAll("val")
+  .data(dataset)
+  .enter().append("g")
+  .attr("class", "val")
+  .attr("id", function(d, i) { return categories[i]; })
+  .style("fill", function(d, i) { return colors[i]; })
+  .style("stroke", function(d, i) { return colors[i]; })
+  .style("stroke-width", 0.8);
+
+var rect = groups.selectAll("rect")
+  .data(function(d) { return d; });
+  
+rect.enter()
+  .append("rect");
+    
+rect.attr("x", function(d) { return x(d.x); })
+  .attr("y", function(d) { return y(d.y0 + d.y); })
+  .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+  .attr("width", x.rangeBand());
+    
+rect.on("click", function(d) {
+	        var letter = d.name;
+            var index = categories.indexOf(d.name)
+//            console.log(letter, index);
+            update(letter, index);
+	   });
+    
+function update(letter, index)
+{
+//    console.log(dataset[index]);
+    
+    if(index!==0)
+    {
+        var i,j,k;
+        var groupAtIndex = [];
+        var heightAtIndex = [];
+
+        /*Create selections for groups*/    
+        for(i=0;i<4;i++)
+        {
+            groupAtIndex[i] = svg.select("g[id='" + categories[i] +"']");
+//            console.log(groupAtIndex[i]); 
+        }
+
+        var groupAbove = [];
+        var groupBelow = [];
+        var yBelow = [];
+
+        j=0, k=0;
+
+        /*Create selections for groups above and below*/
+        for(i=0;i<4;i++)
+        {
+           if(i>index)
+            {
+                groupAbove[j] = groupAtIndex[i];
+                j++;
+            }
+            if(i<index)
+            {
+                groupBelow[k] = groupAtIndex[i];
+                k++;
+            }
+        }
+//            console.log(groupBelow);
+//            console.log(groupAbove);
+
+        /*Defining y array*/    
+        for(i=0;i<groupBelow.length;i++)
+        {
+            yBelow[i] = [];
+        }
+
+        /*Height array for group at index*/
+        groupAtIndex[index]
+                .selectAll("rect")
+                .each(function(d,i){
+                                    heightAtIndex[i] = +(d3.select(this)
+                                        .node()
+                                        .getAttribute("height"));
+                                   });
+
+        /*y array for groups below index*/    
+        for(i=0;i<groupBelow.length;i++)
+        {
+                groupBelow[i]
+                        .selectAll("rect")
+                        .each(function(d,j){
+                                            yBelow[i][j] = d3.select(this)
+                                                .node()
+                                                .getAttribute("y");
+                                           });  
+        }
+
+//        console.log(heightAtIndex);
+//        console.log(yBelow);
+
+        /*Remove group at clicked index*/
+        groupAtIndex[index]
+            .selectAll("rect")
+            .each(function(d,i){
+                                d3
+                                .select(this)
+                                .transition()
+                                .ease("linear")
+                                .duration(heightAtIndex[i]*10)
+                                .attr("height", 0)
+                                .transition()
+                                .remove();
+                                }
+                 );
+
+        /*Set group delay*/
+        var delay = d3.max(heightAtIndex);
+//        console.log(delay);
+
+        groupAtIndex[index]
+            .transition()
+            .delay(delay*10)
+            .remove();
+
+        /*Move the groups below upwards*/
+        for(i=0; i<groupBelow.length; i++)
+        {
+            groupBelow[i]
+                .selectAll("rect")
+                .each(function(d,j){
+                                    d3
+                                    .select(this)
+                                    .transition()
+                                    .ease("linear")
+                                    .duration(heightAtIndex[j]*10)
+                                    .attr("y", yBelow[i][j]-heightAtIndex[j])
+                                    });
+        }
+
+        /*Create new group and rectangles for clicked index, transition from the bottom*/
+        var newgroup = svg
+            .append("g")
+            .attr("class", "val")
+            .attr("id", "" + categories[index])
+            .style("fill", colors[index])
+            .style("stroke", colors[index])
+            .style("stroke-width", 0.8);
+
+        var newrect = newgroup.selectAll("rect")
+                        .data(dataset[index])
+                        .enter()
+                        .append("rect");
+
+
+        newrect
+            .attr("x", function(d) { return x(d.x); })
+            .attr("y", height)
+            .attr("height", 0)
+            .attr("width", x.rangeBand())
+            .each(function(d,i){
+                                    d3
+                                    .select(this)            
+                                    .transition()
+                                    .ease("linear")
+                                    .duration(heightAtIndex[i]*10)
+                                    .attr("y", height - heightAtIndex[i])
+                                    .attr("height", heightAtIndex[i])
+                                });
+        
+        /*Reorder indices of categories and colors*/
+        var p = index;
+        var c = colors[index];
+
+        for(var m=p;m>0;m--)
+        {
+            categories[m]=categories[m-1];
+            colors[m]=colors[m-1];
+        }
+        categories[0]=letter;
+        colors[0]=c;
+
+//        console.log(categories);
+//        console.log(colors);
+        
+    }
+    return;
+}
+</script>
+</body>
+</html>

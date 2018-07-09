@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stacked to Group Without Preset Duration</title>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <style type="text/css">
+  svg {
+    font: 10px sans-serif;
+    shape-rendering: crispEdges;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+  }
+ 
+/*
+  path.domain {
+    stroke: none;
+  }
+*/
+ 
+  .x .tick line {
+    stroke: #fff;
+  }
+  .x .tick text {
+    fill: #fff;
+  }
+  </style>
+
+</head>
+<body>
+<h3>Stack to Group Without Preset Duration</h3>
+<br>
+<input type ="button" onclick = "scale()" value = "Update"/>
+<div id="vis"></div>
+
+<script>
+
+/*Setup svg*/
+
+var margin = {top: 20, right: 160, bottom: 35, left: 30};
+
+var width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+/*Data*/
+var data = [{ year: "2006", A: "10", B: "15", C: "12", D: "6" }];
+
+var categories = d3.keys(data[0]).filter(function(key) { return key !== "year"; });
+    
+//console.log(data[0]);
+//console.log(categories);
+var parse = d3.time.format("%Y").parse;
+
+
+// Transpose the data into layers
+var dataset = d3.layout.stack()(categories.map(function(letter) {
+  return data.map(function(d) {
+    return {name: letter, x: parse(d.year), y: +d[letter]};
+  });
+}));
+    
+// Set x, y and colors
+var x = d3.scale.ordinal()
+  .domain(dataset[0].map(function(d) { return d.x; }))
+  .rangeRoundBands([10, width-10],0.02);
+    
+
+var y = d3.scale.linear()
+  .domain([0, d3.max(dataset, function(d) {  return d3.max(d, function(d) { return d.y0 + d.y; });  })])
+  .range([height, 0]);
+
+var colors = ['#6b486b', '#a05d56', '#d0743c', '#ff8c00'];
+
+
+// Define and draw axes
+var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient("left")
+  .ticks(5)
+  .tickFormat( function(d) { return d } );
+
+var xAxis = d3.svg.axis()
+  .scale(x)
+  .orient("bottom")
+  .tickFormat(d3.time.format("%Y"));
+
+svg.append("g")
+  .attr("class", "y axis")
+  .attr("transform","translate(12,0)")
+  .call(yAxis);
+
+svg.append("g")
+.attr("id","X")
+  .attr("class", "x axis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(xAxis);
+
+
+// Create groups for each series, rects for each segment 
+var widthStack = 100;
+    
+var groups = svg.selectAll("val")
+.data(dataset)
+  .enter().append("g")
+  .attr("class", "val")
+  .style("fill", function(d, i) { return colors[i]; })
+  .style("stroke", function(d, i) { return colors[i]; } );
+
+
+var rect = groups
+    .selectAll("rect")
+    .data(function(d) { return d; });
+    
+rect
+  .enter()
+  .append("rect")
+  .attr("id", function(d){return ""+d.name;})
+  .attr("x", function(d) { return x(d.x); })
+  .attr("y", function(d) { return y(d.y0 + d.y); })
+  .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+  .attr("width", widthStack);
+    
+rect
+  .enter()
+  .append("rect")
+  .attr("fill","none")
+  .style("stroke-width", 0.5)
+  .attr("id", function(d){return "1"+d.name;})
+  .attr("x", function(d) { return x(d.x); })
+  .attr("y", function(d) { return y(d.y0 + d.y); })
+  .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+  .attr("width", widthStack);
+    
+rect
+    .exit()
+    .transition()
+    .duration(1000)
+    .attr('height', 0)
+    .attr('y', height)
+    .remove();
+
+/*Raise X axis over all elements*/    
+var axisx = svg.select("#X");
+        
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
+axisx.moveToFront();
+    
+function update()
+{
+    var groupBarWidth = widthStack/8;
+    
+    var i,j,k;
+    var rectAtIndex = [];
+    var outlineIndex = [];
+    var heightRect = [];
+    var xRect = [];
+    var yRect = [];
+    
+    /*Selections*/
+    for(i=0;i<4;i++)
+    {
+        rectAtIndex[i] = svg.select("rect[id='" + categories[i] +"']");
+        heightRect[i] = rectAtIndex[i].node().getAttribute("height");
+        yRect[i] = rectAtIndex[i].node().getAttribute("y"); 
+        xRect[i] = rectAtIndex[i].node().getAttribute("x"); 
+        outlineIndex[i] = svg.select("rect[id='1" + categories[i] +"']");
+    }
+
+    console.log(rectAtIndex);
+
+    var groupBars = [];
+
+    for(i=0;i<4;i++)
+    {
+        groupBars[i] = rectAtIndex[i].select(function() { console.log(this.parentNode);
+                                                   return this.parentNode; });
+    }
+    
+    /*Delays*/
+    var delays = [];
+    
+    for(i=3;i>=0;i--)
+    {
+        if(i==3)
+            delays[i]=2000;
+        else
+            delays[i] = delays[i+1] + heightRect[i+1]*10; 
+    }
+
+    /*Transitions*/
+    j=0;
+
+    for(i=3;i>=0;i--,j++)
+    {
+        /*Create grouped bars*/
+        groupBars[i].append("rect")
+            .attr("x", widthStack+j*(groupBarWidth+0.3))
+            .attr("width", groupBarWidth)
+            .attr("fill", "none")
+            .style("stroke", colors[i])
+            .style("stroke-width", 0.5)
+            .attr("y", height - (heightRect[i]))
+            .attr("height", heightRect[i]);
+        
+        /*Transfer from stacked to grouped*/
+        if(i==0)
+        {
+            rectAtIndex[i].transition()
+                        .delay(delays[i])
+                        .duration(heightRect[i]*10)
+                        .ease("linear-in-out")
+                        .attr("y", height)
+                        .attr("height",0);
+            
+            outlineIndex[i].transition()
+                    .delay(delays[i] + heightRect[i]*10 + 200)
+                    .duration(2000)
+                    .attr("opacity", 0);
+            
+        }
+        else
+        {   
+            rectAtIndex[i].transition()
+                        .delay(delays[i])
+                        .duration(heightRect[i]*10)
+                        .ease("linear-in-out")
+                        .attr("y", yRect[i-1])
+                        .attr("height",0);
+            
+            outlineIndex[i].transition()
+                    .delay(delays[i-1])
+                    .duration(2000)
+                    .attr("opacity", 0);
+
+        }
+        groupBars[i].append("rect")
+                .attr("x", widthStack+j*(groupBarWidth+0.3))
+                .attr("y", height)
+                .attr("height", 0)
+                .attr("width", groupBarWidth)
+                .attr("fill", colors[i])
+                .transition()
+                .delay(delays[i])
+                .duration(heightRect[i]*10)
+                .attr("y", height - (heightRect[i]))
+                .attr("height", heightRect[i])
+                .ease("linear-in-out")
+                .attr("fill", colors[i]);
+        
+
+    }
+    return;
+}
+
+function scale()
+{
+    var transitions = 0;
+    
+    svg.selectAll("rect")
+    .transition()
+    .delay(1000)
+    .duration(1000)
+    .attr("width", widthStack/2)
+    .each( "start", function() {
+        transitions++;
+    })
+    .each( "end", function() {
+        if( --transitions === 0 ) {
+            update();
+        }
+    }); 
+}
+</script>
+</body>
+</html>
