@@ -466,6 +466,7 @@ function update()
         {
             rectBar[i][j]
                 .transition()
+                .ease("linear-in-out")
                 .delay(delayGroup[i][j])
                 .duration(heightAtIndex[i][j]*20)
                 .attr("y", height)
