@@ -30,16 +30,20 @@
 <div id="vis"></div>
 
 <script>
+    
 // Setup svg 
 var margin = {top: 20, right: 160, bottom: 35, left: 30};
+    
 var width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
+    
 var svg = d3.select("body")
   .append("svg")
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
   .append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
 /* Data in strings */
 var data = [
   { year: "2006", A: "10", B: "15", C: "9", D: "6" },
@@ -48,16 +52,18 @@ var data = [
   { year: "2009", A: "01", B: "15", C: "5", D: "4" },
   { year: "2010", A: "02", B: "10", C: "4", D: "2" }
 ];
-   console.log(data.length);
+//   console.log(data.length);
+    
 var parse = d3.time.format("%Y").parse;
+    
 // Transpose the data into layers
 var dataset = d3.layout.stack()(["A", "B", "C", "D"].map(function(letter) {
   return data.map(function(d) {
     return {name: letter, x: parse(d.year), y: +d[letter]};
   });
 }));
-console.log(dataset);
-console.log(dataset[0]);
+//console.log(dataset);
+//console.log(dataset[0]);
     
 var categories = d3.keys(data[0]).filter(function(key) { return key !== "year"; });
     
@@ -66,13 +72,12 @@ var x = d3.scale.ordinal()
   .domain(dataset[0].map(function(d) { return d.x; }))
   .rangeRoundBands([10, width-10],0.3);
     
-var x1 = d3.scale.ordinal()
-  .domain(dataset[0].map(function(d) { return d.x; }))
-  .rangeRoundBands([10, width-10],0.3);
 var y = d3.scale.linear()
   .domain([0, d3.max(dataset, function(d) {  return d3.max(d, function(d) { return d.y0 + d.y; });  })])
   .range([height, 0]);
+    
 var colors = ['#6b486b', '#a05d56', '#d0743c', '#ff8c00'];
+    
 // Define and draw axes
 var yAxis = d3.svg.axis()
   .scale(y)
@@ -80,19 +85,23 @@ var yAxis = d3.svg.axis()
   .ticks(5)
   //.tickSize(-width, 0, 0)
   .tickFormat( function(d) { return d } );
+    
 var xAxis = d3.svg.axis()
   .scale(x)
   .orient("bottom")
   .tickFormat(d3.time.format("%Y"));
+    
 svg.append("g")
   .attr("class", "y axis")
   .attr("transform","translate(12,0)")
   .call(yAxis);
+    
 svg.append("g")
   .attr("id","X")
   .attr("class", "x axis")
   .attr("transform", "translate(0," + height + ")")
   .call(xAxis);
+    
 // Create groups for each series, rects for each segment 
 var groups = svg.selectAll("val")
   .data(dataset)
@@ -109,6 +118,7 @@ var groupsOutline = svg.selectAll("val")
   .style("fill", "none")
   .style("stroke-width", 0.5)
   .style("stroke", function(d, i) { return colors[i]; } );
+    
 var rect = groups.selectAll("rect")
   .data(function(d) { return d; });
   
@@ -146,6 +156,7 @@ rectOutline
     .attr('height', 0)
     .attr('y', height)
     .remove();
+    
 /*Raise X axis over all elements*/    
 var xAxis1 = svg.select("#X");
         
@@ -154,10 +165,13 @@ d3.selection.prototype.moveToFront = function() {
     this.parentNode.appendChild(this);
   });
 };
+    
 xAxis1.moveToFront();
+    
 function update()
-{    
-    var defaultBarWidth;
+{   
+    var padding = 1;
+    var defaultBarWidth = (x.rangeBand() -(x.rangeBand()/dataset.length) - padding)/dataset.length;
     
     var i,j,k;
     var groupAtIndex = [];
@@ -226,7 +240,6 @@ function update()
                                    });
     }  
     
-    defaultBarWidth = widthAtIndex[0][0];
     
     /*Y array for all rectangles*/
     for(i=0;i<dataset.length;i++)
@@ -265,12 +278,12 @@ function update()
             area[i][j] = heightAtIndex[i][j]*100;
     }
     
-    console.log(rectAtIndex[0]);
-    console.log(heightAtIndex[0]);
-    console.log(widthAtIndex[0]);
-    console.log(yAtIndex[0]);
-    console.log(xAtIndex[0]);
-    console.log(area[0]);
+//    console.log(rectAtIndex[0]);
+//    console.log(heightAtIndex[0]);
+//    console.log(widthAtIndex[0]);
+//    console.log(yAtIndex[0]);
+//    console.log(xAtIndex[0]);
+//    console.log(area[0]);
     
     /*Delay stack to group*/
     var delayStack = [];
@@ -289,8 +302,8 @@ function update()
                 delayStack[i][j] = delayStack[i+1][j] + heightAtIndex[i+1][j]*20; 
         }
     }
-    console.log(d3.max(delayStack[0]));
-    console.log(d3.max(heightAtIndex[0]));
+//    console.log(d3.max(delayStack[0]));
+//    console.log(d3.max(heightAtIndex[0]));
     
     /*Delay group to stack*/
     var delayGroup = [];
@@ -309,6 +322,7 @@ function update()
                 delayGroup[i][j] = delayGroup[i-1][j] + heightAtIndex[i-1][j]*20; 
         }
     }
+    
     /*Create groups and rectangles for grouped bars*/
     var groupBar = [];
     
@@ -354,6 +368,7 @@ function update()
         }
     }
     console.log(rectBar);
+    
     /*TRANSITION STACK TO GROUP*/
     
     /*Stacks transitioning down*/
@@ -397,7 +412,7 @@ function update()
         for(j=0;j<dataset[0].length;j++)
         {
             rectBar[i][j]
-                .attr("x", xAtIndex[i][j] + widthAtIndex[i][j] + 5 + defaultBarWidth*k)
+                .attr("x", xAtIndex[i][j] + widthAtIndex[i][j] + padding + defaultBarWidth*k)
                 .attr("y", height)
                 .attr("height", 0)
                 .attr("width", defaultBarWidth)                          
@@ -414,7 +429,7 @@ function update()
                 .transition()
                 .delay(delayStack[dataset.length-1][0] - 500)
                 .duration(0)
-                .attr("x", xAtIndex[i][j] + widthAtIndex[i][j] + 5 + (defaultBarWidth)*k)
+                .attr("x", xAtIndex[i][j] + widthAtIndex[i][j] + padding + (defaultBarWidth)*k)
                 .attr("y", height-(heightAtIndex[i][j]))
                 .attr("height", heightAtIndex[i][j])
                 .attr("width", defaultBarWidth)                           
@@ -423,6 +438,7 @@ function update()
                 .style("stroke", colors[i]);
         }
     } 
+    
     /*TRANSITION GROUP TO STACK*/
     
     /*Stacks transitioning up*/
